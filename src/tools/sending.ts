@@ -68,6 +68,8 @@ function withoutDuplicates(to: Contact[], cc: Contact[] | undefined): { to: Cont
   return { to: to.filter(firstMention), cc: cc?.filter(firstMention) };
 }
 
+import { draftLink } from '../agni/draft-link.js';
+
 export function registerSendingTools(server: McpServer, accountManager: AccountManager): void {
   // --- email_send ---
   server.tool(
@@ -332,7 +334,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
           ...threading,
         };
         const result = await provider.createDraft(params);
-        return jsonResult({ ...result, signature });
+        return jsonResult({ ...result, ...(await draftLink(accountManager, args.accountId, result.messageId)), signature });
       } catch (error: any) {
         return jsonResult({ error: error.message });
       }
@@ -369,7 +371,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
           attachments,
         };
         const result = await provider.updateDraft(args.draftId, params, args.sourceFolder);
-        return jsonResult({ ...result, signature });
+        return jsonResult({ ...result, ...(await draftLink(accountManager, args.accountId, result.messageId)), signature });
       } catch (error: any) {
         return jsonResult({ error: error.message });
       }

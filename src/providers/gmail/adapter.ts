@@ -217,7 +217,7 @@ export class GmailAdapter implements EmailProvider {
     };
   }
 
-  async createDraft(params: SendEmailParams): Promise<{ id: string }> {
+  async createDraft(params: SendEmailParams): Promise<{ id: string; messageId?: string }> {
     const gmail = this.ensureConnected();
     const raw = await this.buildRaw(params);
 
@@ -228,7 +228,7 @@ export class GmailAdapter implements EmailProvider {
       },
     });
 
-    return { id: res.data.id || '' };
+    return { id: res.data.id || '', messageId: res.data.message?.id || undefined };
   }
 
   /**
@@ -239,7 +239,7 @@ export class GmailAdapter implements EmailProvider {
    * when the caller names no attachments, the stored draft's files are. A
    * given list (an empty one included) replaces the files.
    */
-  async updateDraft(draftId: string, update: SendEmailParams): Promise<{ id: string }> {
+  async updateDraft(draftId: string, update: SendEmailParams): Promise<{ id: string; messageId?: string }> {
     const gmail = this.ensureConnected();
     let params = update;
     const keepThread = update.threadId === undefined;
@@ -278,7 +278,7 @@ export class GmailAdapter implements EmailProvider {
       },
     });
 
-    return { id: res.data.id || draftId };
+    return { id: res.data.id || draftId, messageId: res.data.message?.id || undefined };
   }
 
   /**

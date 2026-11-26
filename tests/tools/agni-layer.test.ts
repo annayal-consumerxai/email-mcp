@@ -97,3 +97,19 @@ describe('email_search_all', () => {
     expect(providers.a.search).toHaveBeenCalledWith(expect.objectContaining({ subject: 'invoice', limit: 2 }));
   });
 });
+
+describe('draft open link', () => {
+  it('builds a Gmail link for the right account and skips other providers', async () => {
+    const { draftLink, gmailDraftUrl } = await import('../../src/agni/draft-link.js');
+    expect(gmailDraftUrl('media@agniverse.co', '18c2f')).toBe('https://mail.google.com/mail/u/media%40agniverse.co/#drafts?compose=18c2f');
+    const mgr = {
+      listAccounts: vi.fn().mockResolvedValue([
+        { id: 'g', provider: 'gmail', email: 'media@agniverse.co' },
+        { id: 'o', provider: 'outlook', email: 'x@outlook.com' },
+      ]),
+    } as unknown as AccountManager;
+    expect((await draftLink(mgr, 'g', '18c2f')).openUrl).toContain('/u/media%40agniverse.co/');
+    expect(await draftLink(mgr, 'o', 'abc')).toEqual({});
+    expect(await draftLink(mgr, 'g', undefined)).toEqual({});
+  });
+});
