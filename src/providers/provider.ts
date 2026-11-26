@@ -112,7 +112,7 @@ export interface EmailProvider {
   getSignature?(from?: string): Promise<{ sendAs: string; html: string | null }>;
 
   // Gmail only: the addresses this account may send as (its aliases).
-  listSendAs?(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean }>>;
+  listSendAs?(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean; hasSignature: boolean }>>;
 
   // Forwarding rules (optional, Gmail and Outlook only; see
   // docs/plans/2026-10-02-forward-rules.md). The allowlist check on the

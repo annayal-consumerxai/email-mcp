@@ -65,7 +65,7 @@ export function registerReadingTools(server: McpServer, accountManager: AccountM
   // --- email_list_send_as ---
   server.tool(
     'email_list_send_as',
-    "Gmail only: list the addresses (aliases) this account can send from. Pass one as `from` on email_draft_create and the other compose tools.",
+    "Gmail only: list the addresses (aliases) this account can send from. Pass one as `from` on email_draft_create and the other compose tools. hasSignature says whether Gmail adds a signature for that address.",
     {
       accountId: z.string(),
     },

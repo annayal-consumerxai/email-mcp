@@ -303,12 +303,13 @@ export class GmailAdapter implements EmailProvider {
     return res.data.sendAs || [];
   }
 
-  async listSendAs(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean }>> {
+  async listSendAs(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean; hasSignature: boolean }>> {
     return (await this.sendAsList()).map((e) => ({
       email: e.sendAsEmail || '',
       displayName: e.displayName || undefined,
       isDefault: !!e.isDefault,
       isPrimary: !!e.isPrimary,
+      hasSignature: !!(e.signature || '').trim(),
     }));
   }
 

@@ -952,8 +952,8 @@ describe('GmailAdapter', () => {
 
       it('lists send-as addresses', async () => {
         expect(await adapter.listSendAs()).toEqual([
-          { email: 'alias@example.com', displayName: 'Alias Name', isDefault: true, isPrimary: false },
-          { email: 'test@gmail.com', displayName: 'Marlin Jai Pohl', isDefault: false, isPrimary: false },
+          { email: 'alias@example.com', displayName: 'Alias Name', isDefault: true, isPrimary: false, hasSignature: false },
+          { email: 'test@gmail.com', displayName: 'Marlin Jai Pohl', isDefault: false, isPrimary: false, hasSignature: false },
         ]);
       });
 
