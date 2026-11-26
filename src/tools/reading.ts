@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { AccountManager } from '../account-manager.js';
 import type { SearchQuery, Email } from '../models/types.js';
+import { cleanLinksDeep } from '../agni/links.js';
 
 function jsonResult(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -107,7 +108,7 @@ export function registerReadingTools(server: McpServer, accountManager: AccountM
           emails = stripBodies(emails);
         }
 
-        return jsonResult(emails);
+        return jsonResult(cleanLinksDeep(emails));
       } catch (error: any) {
         return jsonResult({ error: error.message });
       }
@@ -127,7 +128,7 @@ export function registerReadingTools(server: McpServer, accountManager: AccountM
       try {
         const provider = await accountManager.getProvider(args.accountId);
         const email = await provider.getEmail(args.emailId, args.sourceFolder);
-        return jsonResult(email);
+        return jsonResult(cleanLinksDeep(email));
       } catch (error: any) {
         return jsonResult({ error: error.message });
       }
@@ -147,7 +148,7 @@ export function registerReadingTools(server: McpServer, accountManager: AccountM
       try {
         const provider = await accountManager.getProvider(args.accountId);
         const thread = await provider.getThread(args.threadId, args.sourceFolder);
-        return jsonResult(thread);
+        return jsonResult(cleanLinksDeep(thread));
       } catch (error: any) {
         return jsonResult({ error: error.message });
       }

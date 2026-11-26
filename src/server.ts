@@ -7,6 +7,8 @@ import { registerSendingTools } from './tools/sending.js';
 import { registerOrganizingTools } from './tools/organizing.js';
 import { registerModerationTools } from './tools/moderation.js';
 import { registerForwardingTools } from './tools/forwarding.js';
+import { registerSearchAllTool } from './tools/search-all.js';
+import { isDraftOnly, withDraftOnlyGuard } from './agni/draft-only.js';
 
 /**
  * The version reported to MCP clients in the initialize handshake. Kept equal
@@ -29,13 +31,16 @@ export async function createServer(accountManager?: AccountManager): Promise<Ser
     version: SERVER_VERSION,
   });
 
-  // Register all tool groups
-  registerAccountTools(server, mgr);
-  registerReadingTools(server, mgr);
-  registerSendingTools(server, mgr);
-  registerOrganizingTools(server, mgr);
-  registerModerationTools(server, mgr);
-  registerForwardingTools(server, mgr);
+  // Register all tool groups. In drafts-only mode the guarded view skips every
+  // tool that sends, deletes, or sets up a standing rule (src/agni/draft-only.ts).
+  const s = withDraftOnlyGuard(server, isDraftOnly());
+  registerAccountTools(s, mgr);
+  registerReadingTools(s, mgr);
+  registerSearchAllTool(s, mgr);
+  registerSendingTools(s, mgr);
+  registerOrganizingTools(s, mgr);
+  registerModerationTools(s, mgr);
+  registerForwardingTools(s, mgr);
 
   return { server, accountManager: mgr };
 }

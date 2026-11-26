@@ -117,7 +117,17 @@ npx -y -p @marlinjai/email-mcp@latest email-mcp-setup
 # Optionally enter SMTP host and port for sending
 ```
 
-## Available Tools (36)
+## Agniverse additions
+
+This fork adds three things on top of upstream email-mcp:
+
+| Setting / tool | What it does |
+|---|---|
+| `EMAIL_MCP_DRAFT_ONLY=1` | Drafts-only mode. Tools that send, forward, delete, transfer, add or remove accounts, or set up forward/block rules are never registered, so the assistant cannot see or call them. Replies go through `email_draft_create` with `inReplyToEmailId`, and a person presses Send. Reading, searching, drafts, marking, labels and moves stay. |
+| `email_search_all` | One search across every account (or the ones in `accountIds`), run in parallel and merged newest first. Each result carries `accountId` and `accountEmail`; an account that fails shows up in `errors` without sinking the rest. |
+| Link cleaning (on by default, `EMAIL_MCP_CLEAN_LINKS=0` to turn off) | Search, get and thread results unwrap `google.com/url?q=` redirects and Outlook Safe Links to the real URL, so wrappers don't get copied into replies. |
+
+## Available Tools (37)
 
 ### Account Management (4)
 
