@@ -97,6 +97,7 @@ export async function resolveSignature(
   provider: EmailProvider,
   body: Body,
   enabled: boolean | undefined,
+  from?: string,
 ): Promise<{ body: Body; signature: SignatureOutcome }> {
   if (enabled === false) return { body, signature: { status: 'disabled' } };
   if (hasSignature(body)) return { body, signature: { status: 'already_present' } };
@@ -105,7 +106,7 @@ export async function resolveSignature(
   }
   let found: { sendAs: string; html: string | null };
   try {
-    found = await provider.getSignature();
+    found = await provider.getSignature(from);
   } catch (error: any) {
     const message: string = error?.message || String(error);
     return {

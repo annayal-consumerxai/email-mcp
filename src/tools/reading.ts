@@ -62,6 +62,24 @@ export function registerReadingTools(server: McpServer, accountManager: AccountM
     },
   );
 
+  // --- email_list_send_as ---
+  server.tool(
+    'email_list_send_as',
+    "Gmail only: list the addresses (aliases) this account can send from. Pass one as `from` on email_draft_create and the other compose tools.",
+    {
+      accountId: z.string(),
+    },
+    async (args) => {
+      try {
+        const provider = await accountManager.getProvider(args.accountId);
+        if (!provider.listSendAs) return jsonResult({ error: 'email_list_send_as is only supported on Gmail accounts' });
+        return jsonResult(await provider.listSendAs());
+      } catch (error: any) {
+        return jsonResult({ error: error.message });
+      }
+    },
+  );
+
   // --- email_search ---
   server.tool(
     'email_search',

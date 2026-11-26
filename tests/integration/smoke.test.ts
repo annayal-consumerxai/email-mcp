@@ -98,8 +98,8 @@ describe('Smoke test', () => {
     // + 12 organizing (7 original + 4 batch [move/delete/mark/label] + email_transfer)
     // + 5 moderation (report_spam, batch_report_spam, create/list/delete_block_rule)
     // + 3 forwarding (create/list/delete_forward_rule)
-    // + 1 email_search_all (Agniverse layer) = 37
-    expect(toolNames.length).toBe(37);
+    // + 2 Agniverse layer (email_search_all, email_list_send_as) = 38
+    expect(toolNames.length).toBe(38);
   });
 
   it('all registered tool names start with email_ prefix', async () => {

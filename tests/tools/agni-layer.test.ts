@@ -113,3 +113,19 @@ describe('draft open link', () => {
     expect(await draftLink(mgr, 'g', undefined)).toEqual({});
   });
 });
+
+describe('from alias guard', () => {
+  it('refuses `from` on a non-Gmail account before anything is created', async () => {
+    const { registerSendingTools } = await import('../../src/tools/sending.js');
+    const provider = { providerType: 'outlook', createDraft: vi.fn() };
+    const mgr = { getProvider: vi.fn().mockResolvedValue(provider), listAccounts: vi.fn().mockResolvedValue([]) } as unknown as AccountManager;
+    const server = new McpServer({ name: 't', version: '0' });
+    registerSendingTools(server, mgr);
+    const res = await tools(server).email_draft_create.handler(
+      { accountId: 'o', to: [{ email: 'a@b.co' }], subject: 's', body: { text: 'x' }, from: 'alias@x.co' },
+      {},
+    );
+    expect(JSON.parse(res.content[0].text).error).toMatch(/only supported on Gmail/);
+    expect(provider.createDraft).not.toHaveBeenCalled();
+  });
+});

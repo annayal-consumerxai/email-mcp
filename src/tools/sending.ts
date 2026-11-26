@@ -70,6 +70,19 @@ function withoutDuplicates(to: Contact[], cc: Contact[] | undefined): { to: Cont
 
 import { draftLink } from '../agni/draft-link.js';
 
+function assertFromSupported(provider: { providerType: string }, from: string | undefined): void {
+  if (from && provider.providerType !== 'gmail') {
+    throw new Error('from (sending from an alias) is only supported on Gmail accounts');
+  }
+}
+
+const FromSchema = z
+  .string()
+  .optional()
+  .describe(
+    "Gmail only: send from one of this account's aliases (a send-as address, see email_list_send_as) instead of its main address. The alias's own signature is used. Omit to use the main address.",
+  );
+
 export function registerSendingTools(server: McpServer, accountManager: AccountManager): void {
   // --- email_send ---
   server.tool(
@@ -83,14 +96,17 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
       subject: z.string(),
       body: BodySchema,
       attachments: AttachmentsSchema,
+      from: FromSchema,
       signature: SignatureSchema,
     },
     async (args) => {
       try {
         const provider = await accountManager.getProvider(args.accountId);
         const attachments = resolveAttachments(args.attachments);
-        const { body, signature } = await resolveSignature(provider, args.body, args.signature);
+        assertFromSupported(provider, args.from);
+        const { body, signature } = await resolveSignature(provider, args.body, args.signature, args.from);
         const params: SendEmailParams = {
+          from: args.from,
           to: args.to,
           cc: args.cc,
           bcc: args.bcc,
@@ -125,6 +141,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         .optional()
         .describe('Extra To recipients added to the default or given To (deduplicated by address)'),
       attachments: AttachmentsSchema,
+      from: FromSchema,
       signature: SignatureSchema,
     },
     async (args) => {
@@ -167,8 +184,10 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         if (args.replyAll) ({ to, cc } = withoutDuplicates(to, cc));
 
         const attachments = resolveAttachments(args.attachments);
-        const { body, signature } = await resolveSignature(provider, args.body, args.signature);
+        assertFromSupported(provider, args.from);
+        const { body, signature } = await resolveSignature(provider, args.body, args.signature, args.from);
         const params: SendEmailParams = {
+          from: args.from,
           to,
           cc,
           bcc: args.bcc,
@@ -203,6 +222,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         .optional()
         .describe('Also forward the original message\'s attachments (default false). Leave it off unless the user asked for the files to go along'),
       sourceFolder: z.string().optional().describe('Source folder (required for IMAP/iCloud when email is not in INBOX)'),
+      from: FromSchema,
       signature: SignatureSchema,
     },
     async (args) => {
@@ -212,7 +232,8 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
 
         // The signature goes on the note, so it ends up between the note and
         // the forwarded message, where Gmail's editor puts it.
-        const { body: note, signature } = await resolveSignature(provider, args.body ?? {}, args.signature);
+        assertFromSupported(provider, args.from);
+        const { body: note, signature } = await resolveSignature(provider, args.body ?? {}, args.signature, args.from);
 
         // Build subject with Fwd: prefix (avoid duplicating)
         const subject = original.subject.startsWith('Fwd: ')
@@ -282,6 +303,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         const attachments = [...forwarded, ...extra];
 
         const params: SendEmailParams = {
+          from: args.from,
           to: args.to,
           cc: args.cc,
           bcc: args.bcc,
@@ -316,6 +338,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         .string()
         .optional()
         .describe('Folder of the email named in inReplyToEmailId (required for IMAP/iCloud when that email is not in INBOX). The draft itself is saved to Drafts'),
+      from: FromSchema,
       signature: SignatureSchema,
     },
     async (args) => {
@@ -325,8 +348,10 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         const threading = args.inReplyToEmailId
           ? replyThreading(await provider.getEmail(args.inReplyToEmailId, args.inReplyToSourceFolder))
           : {};
-        const { body, signature } = await resolveSignature(provider, args.body, args.signature);
+        assertFromSupported(provider, args.from);
+        const { body, signature } = await resolveSignature(provider, args.body, args.signature, args.from);
         const params: SendEmailParams = {
+          from: args.from,
           to: args.to,
           subject: args.subject,
           body,
@@ -355,6 +380,7 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
         "Files to attach. When given, they replace the draft's current attachments; an empty list removes them all. When omitted, the draft keeps the files it has.",
       ),
       sourceFolder: z.string().optional().describe('Source folder (required for IMAP/iCloud when the draft is not in the default Drafts folder)'),
+      from: FromSchema,
       signature: SignatureSchema.describe(
         "Add the account's signature (default true), as on email_draft_create. The body given here replaces the draft's body, so the signature is added to it once; a body that already holds one (passed back from the draft) is left alone, so repeated updates never stack a second one",
       ),
@@ -363,8 +389,10 @@ export function registerSendingTools(server: McpServer, accountManager: AccountM
       try {
         const provider = await accountManager.getProvider(args.accountId);
         const attachments = resolveAttachments(args.attachments);
-        const { body, signature } = await resolveSignature(provider, args.body, args.signature);
+        assertFromSupported(provider, args.from);
+        const { body, signature } = await resolveSignature(provider, args.body, args.signature, args.from);
         const params: SendEmailParams = {
+          from: args.from,
           to: args.to,
           subject: args.subject,
           body,

@@ -32,6 +32,9 @@ export interface SendEmailParams {
    *  reply only through createReply, which needs this id (not the RFC
    *  Message-ID in inReplyTo). Other providers ignore it. */
   replyToGraphId?: string;
+  /** Gmail: one of the account's send-as addresses (an alias) to send from.
+   *  Other providers reject it. Omitted: the account's own address. */
+  from?: string;
 }
 
 export interface EmailProvider {
@@ -106,7 +109,10 @@ export interface EmailProvider {
   // Gmail only: see docs/plans/2026-10-29-gmail-signature.md). null when that
   // address has no signature. The tool layer appends it to outgoing mail;
   // providers without a signature API (Outlook.com, iCloud, IMAP) omit it.
-  getSignature?(): Promise<{ sendAs: string; html: string | null }>;
+  getSignature?(from?: string): Promise<{ sendAs: string; html: string | null }>;
+
+  // Gmail only: the addresses this account may send as (its aliases).
+  listSendAs?(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean }>>;
 
   // Forwarding rules (optional, Gmail and Outlook only; see
   // docs/plans/2026-10-02-forward-rules.md). The allowlist check on the

@@ -119,15 +119,16 @@ npx -y -p @marlinjai/email-mcp@latest email-mcp-setup
 
 ## Agniverse additions
 
-This fork adds three things on top of upstream email-mcp:
+This fork adds four things on top of upstream email-mcp:
 
 | Setting / tool | What it does |
 |---|---|
 | `EMAIL_MCP_DRAFT_ONLY=1` | Drafts-only mode. Tools that send, forward, delete, transfer, add or remove accounts, or set up forward/block rules are never registered, so the assistant cannot see or call them. Replies go through `email_draft_create` with `inReplyToEmailId`; on Gmail the result carries `openUrl`, a link that opens the draft in Gmail so a person can press Send. Reading, searching, drafts, marking, labels and moves stay. |
 | `email_search_all` | One search across every account (or the ones in `accountIds`), run in parallel and merged newest first. Each result carries `accountId` and `accountEmail`; an account that fails shows up in `errors` without sinking the rest. |
 | Link cleaning (on by default, `EMAIL_MCP_CLEAN_LINKS=0` to turn off) | Search, get and thread results unwrap `google.com/url?q=` redirects and Outlook Safe Links to the real URL, so wrappers don't get copied into replies. |
+| `from` + `email_list_send_as` (Gmail) | Send or draft from one of the mailbox's aliases (a Gmail "Send mail as" address) instead of its main address, with that alias's display name and signature. An alias Gmail doesn't list is refused with the list of ones it does. `email_list_send_as` shows them. |
 
-## Available Tools (37)
+## Available Tools (38)
 
 ### Account Management (4)
 

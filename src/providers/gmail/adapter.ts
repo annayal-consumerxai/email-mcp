@@ -287,9 +287,11 @@ export class GmailAdapter implements EmailProvider {
    * default send-as when that address is not listed. Read on every call, so
    * a signature changed in Gmail's settings applies to the next mail.
    */
-  async getSignature(): Promise<{ sendAs: string; html: string | null }> {
+  async getSignature(from?: string): Promise<{ sendAs: string; html: string | null }> {
     const entries = await this.sendAsList();
-    const entry = this.ownSendAs(entries) || entries.find((e) => e.isDefault);
+    const entry = from
+      ? this.aliasSendAs(entries, from)
+      : this.ownSendAs(entries) || entries.find((e) => e.isDefault);
     if (!entry) throw new Error(`Gmail lists no send-as address for ${this.email}`);
     const html = (entry.signature || '').trim();
     return { sendAs: entry.sendAsEmail || this.email, html: html || null };
@@ -299,6 +301,31 @@ export class GmailAdapter implements EmailProvider {
     const gmail = this.ensureConnected();
     const res = await gmail.users.settings.sendAs.list({ userId: 'me' });
     return res.data.sendAs || [];
+  }
+
+  async listSendAs(): Promise<Array<{ email: string; displayName?: string; isDefault: boolean; isPrimary: boolean }>> {
+    return (await this.sendAsList()).map((e) => ({
+      email: e.sendAsEmail || '',
+      displayName: e.displayName || undefined,
+      isDefault: !!e.isDefault,
+      isPrimary: !!e.isPrimary,
+    }));
+  }
+
+  /** The send-as entry for an alias, or an error naming the ones that exist. */
+  private aliasSendAs(entries: gmail_v1.Schema$SendAs[], from: string): gmail_v1.Schema$SendAs {
+    const want = from.trim().toLowerCase();
+    const entry = entries.find((e) => (e.sendAsEmail || '').toLowerCase() === want);
+    if (!entry) {
+      const known = entries.map((e) => e.sendAsEmail).filter(Boolean).join(', ') || 'none';
+      throw new Error(
+        `${from} is not a send-as address of ${this.email} (known: ${known}). Add it in Gmail: Settings, Accounts, "Send mail as".`,
+      );
+    }
+    if (entry.verificationStatus && entry.verificationStatus !== 'accepted') {
+      throw new Error(`${from} is listed as a send-as address of ${this.email} but Gmail has not verified it yet.`);
+    }
+    return entry;
   }
 
   private ownSendAs(entries: gmail_v1.Schema$SendAs[]): gmail_v1.Schema$SendAs | undefined {
@@ -312,7 +339,13 @@ export class GmailAdapter implements EmailProvider {
    * mail still goes out, named after the account (see `fromAddress`); the
    * signature outcome in the tool result already reports that failure.
    */
-  private async from() {
+  private async from(alias?: string) {
+    if (alias) {
+      // An alias must exist as a send-as address; failing here stops the mail
+      // or draft instead of letting Gmail silently rewrite the From.
+      const entry = this.aliasSendAs(await this.sendAsList(), alias);
+      return fromAddress(entry.sendAsEmail || alias, entry.displayName || undefined, this.accountName);
+    }
     let displayName: string | undefined;
     try {
       displayName = this.ownSendAs(await this.sendAsList())?.displayName || undefined;
@@ -851,7 +884,7 @@ export class GmailAdapter implements EmailProvider {
    * and any attachments. See `buildMimeMessage`.
    */
   private async buildRaw(params: SendEmailParams): Promise<string> {
-    const message = await buildMimeMessage(await this.from(), params);
+    const message = await buildMimeMessage(await this.from(params.from), params);
     return message.toString('base64url');
   }
 }

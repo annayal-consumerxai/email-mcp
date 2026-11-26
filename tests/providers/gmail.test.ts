@@ -934,6 +934,29 @@ describe('GmailAdapter', () => {
         ]);
       });
 
+      it('sends and drafts from a chosen alias with its display name', async () => {
+        await adapter.createDraft({ ...plain, from: 'Alias@example.com' });
+        expect(await from(mockDraftsCreate.mock.calls[0][0].requestBody.message.raw)).toEqual([
+          { name: 'Alias Name', address: 'alias@example.com' },
+        ]);
+        await adapter.sendEmail({ ...plain, from: 'alias@example.com' });
+        expect(await from(mockMessagesSend.mock.calls[0][0].requestBody.raw)).toEqual([
+          { name: 'Alias Name', address: 'alias@example.com' },
+        ]);
+      });
+
+      it('refuses an alias that is not a send-as address, naming the known ones', async () => {
+        await expect(adapter.createDraft({ ...plain, from: 'nope@example.com' })).rejects.toThrow(/alias@example\.com, test@gmail\.com/);
+        expect(mockDraftsCreate).not.toHaveBeenCalled();
+      });
+
+      it('lists send-as addresses', async () => {
+        expect(await adapter.listSendAs()).toEqual([
+          { email: 'alias@example.com', displayName: 'Alias Name', isDefault: true, isPrimary: false },
+          { email: 'test@gmail.com', displayName: 'Marlin Jai Pohl', isDefault: false, isPrimary: false },
+        ]);
+      });
+
       it('leaves From bare when the account name is only the provider label', async () => {
         mockSendAsList.mockResolvedValue({ data: { sendAs: [] } });
         await adapter.connect({ ...testCredentials, name: 'Gmail' });
@@ -1219,6 +1242,18 @@ describe('GmailAdapter', () => {
         data: { sendAs: [{ sendAsEmail: 'alias@example.com', isDefault: true, signature: '<b>Alias</b>' }] },
       });
       expect(await adapter.getSignature()).toEqual({ sendAs: 'alias@example.com', html: '<b>Alias</b>' });
+    });
+
+    it('reads the signature of a chosen alias', async () => {
+      mockSendAsList.mockResolvedValue({
+        data: {
+          sendAs: [
+            { sendAsEmail: 'alias@example.com', signature: '<b>Alias</b>' },
+            { sendAsEmail: 'test@gmail.com', isPrimary: true, isDefault: true, signature: '<b>Test</b>' },
+          ],
+        },
+      });
+      expect(await adapter.getSignature('alias@example.com')).toEqual({ sendAs: 'alias@example.com', html: '<b>Alias</b>' });
     });
 
     it('returns null html when the address has no signature', async () => {
